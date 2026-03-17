@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="BBLAM Request"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+  <link rel="apple-touch-icon" href="icon-192.png"/>
+  <title>BBLAM Service Request</title>
+  <style>
+    :root {
+      --set-red:    #c0392b;
+      --set-dark:   #1a1a2e;
+      --set-blue:   #16213e;
+      --set-gold:   #f0a500;
+      --text-light: #f5f5f5;
+      --radius:     8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: var(--set-dark);
+      color: var(--text-light);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--set-blue);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid var(--set-red);
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+    }
+
+    .logo-badge {
+      width: 32px; height: 32px;
+      background: var(--set-red);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-light);
+      line-height: 1.2;
+    }
+    .header-text p {
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .btn-action {
+      background: var(--set-red);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 6px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .btn-action:hover { background: #a93226; }
+
+    .btn-action.secondary {
+      background: transparent;
+      border: 1px solid #444;
+      color: #aaa;
+    }
+    .btn-action.secondary:hover {
+      border-color: var(--set-gold);
+      color: var(--set-gold);
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      background: #0f3460;
+      padding: 5px 14px;
+      font-size: 10px;
+      color: #7fb3d3;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #27ae60;
+      animation: pulse 2s infinite;
+    }
+    .status-dot.error { background: #e74c3c; animation: none; }
+    .status-dot.loading { background: var(--set-gold); }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%     { opacity: 0.4; }
+    }
+
+    /* ── iframe container ── */
+    .frame-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%; height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      position: absolute; inset: 0;
+      background: var(--set-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+      transition: opacity 0.4s;
+    }
+    .loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #2c2c54;
+      border-top-color: var(--set-red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* ── Error state ── */
+    .error-state {
+      position: absolute; inset: 0;
+      background: var(--set-dark);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .error-state.show { display: flex; }
+    .error-icon { font-size: 36px; }
+    .error-msg { font-size: 12px; color: #aaa; line-height: 1.6; }
+
+    .btn-retry {
+      background: var(--set-gold);
+      color: #1a1a1a;
+      border: none;
+      border-radius: var(--radius);
+      padding: 8px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-retry:hover { background: #d4941a; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--set-blue);
+      border-top: 1px solid #2c2c54;
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    footer span {
+      font-size: 9px;
+      color: #555;
+    }
+    footer a {
+      font-size: 9px;
+      color: var(--set-gold);
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Install banner ── */
+    .install-banner {
+      display: none;
+      background: linear-gradient(135deg, #0f3460, #16213e);
+      border-bottom: 1px solid var(--set-gold);
+      padding: 8px 14px;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--set-gold);
+      flex-shrink: 0;
+    }
+    .install-banner.show { display: flex; }
+    .install-banner .btn-install {
+      margin-left: auto;
+      background: var(--set-gold);
+      color: #1a1a1a;
+      border: none;
+      border-radius: var(--radius);
+      padding: 5px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .install-banner .btn-dismiss {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Install Banner (PWA) -->
+  <div class="install-banner" id="installBanner">
+    <span>📲 ติดตั้งเป็นแอปบนเครื่องได้ — ใช้งานสะดวกขึ้น</span>
+    <button class="btn-install" id="btnInstall">ติดตั้ง</button>
+    <button class="btn-dismiss" id="btnDismiss">✕</button>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo-badge">REQ</div>
+    <div class="header-text">
+      <h1>BBLAM Service Request</h1>
+      <p>Power App Service Request</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-action secondary" onclick="reloadFrame()">↻ รีโหลด</button>
+      <button class="btn-action" onclick="openExternal()">⬡ เปิดแท็บใหม่</button>
+    </div>
+  </header>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">กำลังโหลด...</span>
+  </div>
+
+  <!-- iframe + overlays -->
+  <div class="frame-wrap">
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div class="loading-text">กำลังเชื่อมต่อ Power App...</div>
+    </div>
+
+    <div class="error-state" id="errorState">
+      <div class="error-icon">⚠️</div>
+      <div class="error-msg">
+        ไม่สามารถโหลดหน้าได้ภายใน iframe<br/>
+        (Power App อาจบล็อก X-Frame-Options)<br/><br/>
+        กรุณาเปิดในแท็บใหม่แทน
+      </div>
+      <button class="btn-retry" onclick="openExternal()">เปิดใน Browser</button>
+    </div>
+
+    <iframe
+      id="appFrame"
+      src="https://apps.powerapps.com/play/e/default-112cab3e-538f-451f-98d8-de2cf3464db4/a/4b3317d0-7d5e-4e9d-8cf4-4eec16d94760?tenantId=112cab3e-538f-451f-98d8-de2cf3464db4&hint=a2e07dbf-54c4-4b35-a0c0-74b58cbbf5ea&sourcetime=1773216326237"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+      allow="clipboard-read; clipboard-write"
+      title="BBLAM Service Request"
+    ></iframe>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <span>© BBLAM Service Request v1.0</span>
+    <a href="#" onclick="openExternal(); return false;">Power App ↗</a>
+  </footer>
+
+  <script>
+    const TARGET_URL = "https://apps.powerapps.com/play/e/default-112cab3e-538f-451f-98d8-de2cf3464db4/a/4b3317d0-7d5e-4e9d-8cf4-4eec16d94760?tenantId=112cab3e-538f-451f-98d8-de2cf3464db4&hint=a2e07dbf-54c4-4b35-a0c0-74b58cbbf5ea&sourcetime=1773216326237";
+
+    const frame      = document.getElementById("appFrame");
+    const overlay    = document.getElementById("loadingOverlay");
+    const errorState = document.getElementById("errorState");
+    const statusText = document.getElementById("statusText");
+    const statusDot  = document.getElementById("statusDot");
+
+    // ── iframe load handling ──
+    let loadTimer = setTimeout(() => {
+      overlay.classList.add("hidden");
+      errorState.classList.add("show");
+      statusDot.classList.add("error");
+      statusText.textContent = "ไม่สามารถโหลดได้ — กรุณาเปิดแท็บใหม่";
+    }, 10000);
+
+    frame.addEventListener("load", () => {
+      clearTimeout(loadTimer);
+      overlay.classList.add("hidden");
+      statusDot.classList.remove("loading", "error");
+      statusText.textContent = "BBLAM Service Request — " + new Date().toLocaleTimeString("th-TH");
+    });
+
+    frame.addEventListener("error", () => {
+      clearTimeout(loadTimer);
+      overlay.classList.add("hidden");
+      errorState.classList.add("show");
+      statusDot.classList.add("error");
+      statusText.textContent = "โหลดไม่สำเร็จ";
+    });
+
+    // ── Actions ──
+    function openExternal() {
+      window.open(TARGET_URL, "_blank");
+    }
+
+    function reloadFrame() {
+      errorState.classList.remove("show");
+      overlay.classList.remove("hidden");
+      statusDot.className = "status-dot loading";
+      statusText.textContent = "กำลังโหลดใหม่...";
+      frame.src = TARGET_URL;
+
+      loadTimer = setTimeout(() => {
+        overlay.classList.add("hidden");
+        errorState.classList.add("show");
+        statusDot.classList.add("error");
+        statusText.textContent = "ไม่สามารถโหลดได้ — กรุณาเปิดแท็บใหม่";
+      }, 10000);
+    }
+
+    // ── PWA Install prompt ──
+    let deferredPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById("installBanner").classList.add("show");
+    });
+
+    document.getElementById("btnInstall").addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const result = await deferredPrompt.userChoice;
+      console.log("Install result:", result.outcome);
+      deferredPrompt = null;
+      document.getElementById("installBanner").classList.remove("show");
+    });
+
+    document.getElementById("btnDismiss").addEventListener("click", () => {
+      document.getElementById("installBanner").classList.remove("show");
+    });
+
+    window.addEventListener("appinstalled", () => {
+      console.log("PWA installed");
+      document.getElementById("installBanner").classList.remove("show");
+    });
+
+    // ── Register Service Worker ──
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").then((reg) => {
+        console.log("SW registered:", reg.scope);
+      }).catch((err) => {
+        console.log("SW registration failed:", err);
+      });
+    }
+  </script>
+
+</body>
+</html>
