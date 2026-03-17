@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SET Overview</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    :root {
+      --set-red:   #c0392b;
+      --set-dark:  #1a1a2e;
+      --set-blue:  #16213e;
+      --set-gold:  #f0a500;
+      --text-light:#f5f5f5;
+      --radius:    8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: var(--set-dark);
+      color: var(--text-light);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--set-blue);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid var(--set-red);
+      flex-shrink: 0;
+    }
+
+    .logo-badge {
+      width: 32px; height: 32px;
+      background: var(--set-red);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-light);
+      line-height: 1.2;
+    }
+    .header-text p {
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    .btn-open {
+      margin-left: auto;
+      background: var(--set-red);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 6px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .btn-open:hover { background: #a93226; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      background: #0f3460;
+      padding: 5px 14px;
+      font-size: 10px;
+      color: #7fb3d3;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #27ae60;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    /* ── iframe container ── */
+    .frame-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%; height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      position: absolute; inset: 0;
+      background: var(--set-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+      transition: opacity 0.4s;
+    }
+    .loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #2c2c54;
+      border-top-color: var(--set-red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* ── Error state ── */
+    .error-state {
+      position: absolute; inset: 0;
+      background: var(--set-dark);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .error-state.show { display: flex; }
+    .error-icon { font-size: 36px; }
+    .error-msg { font-size: 12px; color: #aaa; line-height: 1.6; }
+
+    .btn-retry {
+      background: var(--set-gold);
+      color: #1a1a1a;
+      border: none;
+      border-radius: var(--radius);
+      padding: 8px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-retry:hover { background: #d4941a; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--set-blue);
+      border-top: 1px solid #2c2c54;
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    footer span {
+      font-size: 9px;
+      color: #555;
+    }
+    footer a {
+      font-size: 9px;
+      color: var(--set-gold);
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo-badge">REQ</div>
+    <div class="header-text">
+      <h1>BBLAM Service Request</h1>
+      <p>Power APP Service Request</p>
+    </div>
+    <button class="btn-open" onclick="openExternal()">⬡ เปิดแท็บใหม่</button>
+  </header>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <span id="statusText">กำลังโหลดข้อมูลตลาด...</span>
+  </div>
+
+  <!-- iframe + overlays -->
+  <div class="frame-wrap">
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div class="loading-text">กำลังเชื่อมต่อ Power APP</div>
+    </div>
+
+    <div class="error-state" id="errorState">
+      <div class="error-icon">⚠️</div>
+      <div class="error-msg">
+        ไม่สามารถโหลดหน้าได้ภายใน iframe<br/>
+        (Power APP อาจปิด X-Frame-Options)<br/><br/>
+        กรุณาเปิดในแท็บใหม่แทน
+      </div>
+      <button class="btn-retry" onclick="openExternal()">เปิดใน Browser</button>
+    </div>
+
+    <iframe
+      id="setFrame"
+      src="https://apps.powerapps.com/play/e/default-112cab3e-538f-451f-98d8-de2cf3464db4/a/4b3317d0-7d5e-4e9d-8cf4-4eec16d94760?tenantId=112cab3e-538f-451f-98d8-de2cf3464db4&hint=a2e07dbf-54c4-4b35-a0c0-74b58cbbf5ea&sourcetime=1773216326237"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      title="BBLAM Service Request"
+    ></iframe>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <span>© BBLAM Service Request</span>
+    <a href="https://apps.powerapps.com/play/e/default-112cab3e-538f-451f-98d8-de2cf3464db4/a/4b3317d0-7d5e-4e9d-8cf4-4eec16d94760?tenantId=112cab3e-538f-451f-98d8-de2cf3464db4&hint=a2e07dbf-54c4-4b35-a0c0-74b58cbbf5ea&sourcetime=1773216326237" onclick="openExternal(); return false;">Power App ↗</a>
+  </footer>
+
+  <script>
+    // ── Office.js init ──
+    Office.onReady(function(info) {
+      console.log("Office ready:", info.host);
+    });
+
+    const TARGET_URL = "https://apps.powerapps.com/play/e/default-112cab3e-538f-451f-98d8-de2cf3464db4/a/4b3317d0-7d5e-4e9d-8cf4-4eec16d94760?tenantId=112cab3e-538f-451f-98d8-de2cf3464db4&hint=a2e07dbf-54c4-4b35-a0c0-74b58cbbf5ea&sourcetime=1773216326237";
+    const frame      = document.getElementById("setFrame");
+    const overlay    = document.getElementById("loadingOverlay");
+    const errorState = document.getElementById("errorState");
+    const statusText = document.getElementById("statusText");
+
+    // ── iframe load handler ──
+    let loadTimer = setTimeout(function() {
+      // ถ้า 8 วินาทียังไม่ load → แสดง error (X-Frame-Options)
+      overlay.classList.add("hidden");
+      errorState.classList.add("show");
+      statusText.textContent = "ไม่สามารถโหลดได้ — กรุณาเปิดแท็บใหม่";
+    }, 8000);
+
+    frame.addEventListener("load", function() {
+      clearTimeout(loadTimer);
+      overlay.classList.add("hidden");
+      statusText.textContent = "BBLAM Service Request — อัพเดทล่าสุด: " + new Date().toLocaleTimeString("th-TH");
+    });
+
+    frame.addEventListener("error", function() {
+      clearTimeout(loadTimer);
+      overlay.classList.add("hidden");
+      errorState.classList.add("show");
+      statusText.textContent = "โหลดไม่สำเร็จ";
+    });
+
+    // ── Open in browser ──
+    function openExternal() {
+      // Office.js way — เปิด browser จริง
+      if (window.Office && Office.context && Office.context.ui) {
+        Office.context.ui.openBrowserWindow(TARGET_URL);
+      } else {
+        window.open(TARGET_URL, "_blank");
+      }
+    }
+  </script>
+
+</body>
+</html>
