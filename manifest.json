@@ -1,7 +1,7 @@
 {
-  "name": "BBLAM Service Request",
+  "name": "BBLAM : ITI services",
   "short_name": "BBLAM Req",
-  "description": "BBLAM Service Request - Power App",
+  "description": "BBLAM : ITI services - Power App",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a2e",
