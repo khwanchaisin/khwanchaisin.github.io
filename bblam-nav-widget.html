@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBLAM NAV Realtime</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #ffffff;
+            color: #333;
+        }
+
+        .nav-widget {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 12px 16px;
+        }
+
+        /* Category Header */
+        .category-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            padding: 10px 0 6px;
+            border-bottom: 1px solid #e0e0e0;
+            margin-top: 8px;
+        }
+
+        .category-header:first-child {
+            margin-top: 0;
+        }
+
+        /* Fund Row */
+        .fund-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .fund-row:last-child {
+            border-bottom: none;
+        }
+
+        .fund-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a3c7a;
+            min-width: 120px;
+        }
+
+        .fund-nav-info {
+            text-align: right;
+            flex: 1;
+        }
+
+        .fund-nav-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .fund-nav-change {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .fund-nav-change.positive {
+            color: #27ae60;
+        }
+
+        .fund-nav-change.negative {
+            color: #e74c3c;
+        }
+
+        .fund-nav-change.neutral {
+            color: #999;
+        }
+
+        .fund-date {
+            font-size: 12px;
+            color: #888;
+            text-align: right;
+            min-width: 80px;
+            padding-left: 8px;
+        }
+
+        /* Table Header */
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 2px solid #1a3c7a;
+            margin-bottom: 2px;
+        }
+
+        .table-header span {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .table-header .col-fund {
+            min-width: 120px;
+        }
+
+        .table-header .col-nav {
+            text-align: right;
+            flex: 1;
+        }
+
+        .table-header .col-date {
+            text-align: right;
+            min-width: 80px;
+            padding-left: 8px;
+        }
+
+        /* Carousel dots */
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 0 8px;
+        }
+
+        .carousel-dots .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .carousel-dots .dot.active {
+            background: #1a3c7a;
+            border-color: #1a3c7a;
+        }
+
+        /* CTA Button */
+        .nav-cta {
+            display: block;
+            text-align: center;
+            padding: 10px 20px;
+            margin: 12px auto 4px;
+            background: #1a3c7a;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+            max-width: 240px;
+        }
+
+        .nav-cta:hover {
+            background: #15305f;
+        }
+
+        /* Slide container */
+        .slides-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide {
+            display: none;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #1a3c7a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Auto-refresh indicator */
+        .refresh-info {
+            text-align: center;
+            font-size: 10px;
+            color: #bbb;
+            padding: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-widget" id="navWidget">
+        <div class="loading" id="loadingIndicator">
+            <div class="loading-spinner"></div>
+            <div>กำลังโหลดข้อมูล NAV...</div>
+        </div>
+
+        <div id="navContent" style="display:none;">
+            <div class="table-header">
+                <span class="col-fund">กองทุนเปิด</span>
+                <span class="col-nav">มูลค่าหน่วยลงทุน</span>
+                <span class="col-date">วันที่</span>
+            </div>
+
+            <div class="slides-container" id="slidesContainer">
+                <!-- Slides will be injected here -->
+            </div>
+
+            <div class="carousel-dots" id="carouselDots">
+                <!-- Dots will be injected here -->
+            </div>
+
+            <a href="https://www.bblam.co.th/products/mutual-funds" target="_top" class="nav-cta">
+                ข้อมูล NAV ทุกกองทุน
+            </a>
+
+            <div class="refresh-info" id="refreshInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // BBLAM NAV Widget
+        // ============================================================
+        // วิธีใช้งาน:
+        // 1. แก้ไขข้อมูลกองทุนในตัวแปร NAV_DATA ด้านล่าง
+        // 2. อัปโหลดไฟล์นี้ไปยัง SharePoint Document Library (เช่น Site Assets)
+        // 3. ใช้ Embed web part บนหน้า SharePoint แล้วฝัง iframe ชี้มาที่ไฟล์นี้
+        //
+        // หากมี API endpoint สำหรับดึงข้อมูล NAV แบบ realtime 
+        // สามารถแก้ไขฟังก์ชัน fetchNAVData() เพื่อดึงข้อมูลจาก API ได้
+        // ============================================================
+
+        // --- ข้อมูลกองทุน (แก้ไขตรงนี้เพื่ออัปเดตข้อมูล) ---
+        // หากมี API ให้แก้ไข fetchNAVData() ด้านล่างแทน
+        const NAV_DATA = [
+            {
+                category: "กองทุนรวมเพื่อการเลี้ยงชีพ",
+                funds: [
+                    { name: "MM-RMF", nav: 12.3491, change: 0.0005, date: "1.4.2569" },
+                    { name: "BFRMF", nav: 16.3671, change: 0.0339, date: "1.4.2569" },
+                    { name: "B-EQRMF", nav: 47.0584, change: -0.2871, date: "1.4.2569" },
+                    { name: "BERMF", nav: 11.5423, change: 0.0214, date: "1.4.2569" },
+                ]
+            },
+            {
+                category: "กองทุนรวมเพื่อการออม",
+                funds: [
+                    { name: "B-INCOMESSF", nav: 11.3582, change: 0.0076, date: "30.3.2569" },
+                    { name: "BM70SSF", nav: 10.5442, change: -0.1038, date: "1.4.2569" },
+                    { name: "B-EQSSF", nav: 9.8821, change: -0.0543, date: "1.4.2569" },
+                    { name: "BESSF", nav: 8.7654, change: 0.0198, date: "1.4.2569" },
+                ]
+            },
+            {
+                category: "กองทุนรวมตราสารหนี้",
+                funds: [
+                    { name: "BFIXED", nav: 14.2367, change: 0.0012, date: "1.4.2569" },
+                    { name: "B-TREASURY", nav: 12.8943, change: 0.0008, date: "1.4.2569" },
+                    { name: "BMONEY", nav: 12.1234, change: 0.0003, date: "1.4.2569" },
+                    { name: "BSIP", nav: 10.9876, change: -0.0045, date: "1.4.2569" },
+                ]
+            },
+            {
+                category: "กองทุนรวมตราสารทุน",
+                funds: [
+                    { name: "BKA", nav: 8.5432, change: -0.0321, date: "1.4.2569" },
+                    { name: "BKA2", nav: 6.7891, change: -0.0198, date: "1.4.2569" },
+                    { name: "BKD", nav: 5.4321, change: 0.0156, date: "1.4.2569" },
+                    { name: "BKIND", nav: 7.6543, change: -0.0087, date: "1.4.2569" },
+                ]
+            }
+        ];
+
+        // --- Configuration ---
+        const FUNDS_PER_SLIDE = 4; // จำนวนกองทุนต่อ slide
+        const AUTO_SLIDE_INTERVAL = 5000; // เลื่อน slide อัตโนมัติทุก 5 วินาที (ms)
+        const AUTO_REFRESH_INTERVAL = 300000; // รีเฟรชข้อมูลทุก 5 นาที (ms) - ใช้เมื่อมี API
+
+        // --- State ---
+        let currentSlide = 0;
+        let totalSlides = 0;
+        let autoSlideTimer = null;
+
+        // --- Flatten funds with category labels ---
+        function prepareFundList(data) {
+            const list = [];
+            data.forEach(group => {
+                list.push({ type: 'category', label: group.category });
+                group.funds.forEach(fund => {
+                    list.push({ type: 'fund', ...fund });
+                });
+            });
+            return list;
+        }
+
+        // --- Build slides from flat list ---
+        function buildSlides(fundList) {
+            const slides = [];
+            let currentSlideItems = [];
+
+            fundList.forEach(item => {
+                if (item.type === 'category') {
+                    currentSlideItems.push(item);
+                } else {
+                    currentSlideItems.push(item);
+                    if (currentSlideItems.filter(i => i.type === 'fund').length >= FUNDS_PER_SLIDE) {
+                        slides.push(currentSlideItems);
+                        currentSlideItems = [];
+                    }
+                }
+            });
+
+            if (currentSlideItems.length > 0) {
+                slides.push(currentSlideItems);
+            }
+
+            return slides;
+        }
+
+        // --- Render ---
+        function renderSlides(slides) {
+            const container = document.getElementById('slidesContainer');
+            const dotsContainer = document.getElementById('carouselDots');
+            totalSlides = slides.length;
+
+            container.innerHTML = '';
+            dotsContainer.innerHTML = '';
+
+            slides.forEach((slideItems, slideIndex) => {
+                const slideEl = document.createElement('div');
+                slideEl.className = 'slide' + (slideIndex === 0 ? ' active' : '');
+                slideEl.setAttribute('data-slide', slideIndex);
+
+                slideItems.forEach(item => {
+                    if (item.type === 'category') {
+                        const catEl = document.createElement('div');
+                        catEl.className = 'category-header';
+                        catEl.textContent = item.label;
+                        slideEl.appendChild(catEl);
+                    } else {
+                        const rowEl = document.createElement('div');
+                        rowEl.className = 'fund-row';
+
+                        const changeClass = item.change > 0 ? 'positive' : item.change < 0 ? 'negative' : 'neutral';
+                        const changeSign = item.change > 0 ? '+' : '';
+
+                        rowEl.innerHTML = `
+                            <div class="fund-name">${item.name}</div>
+                            <div class="fund-nav-info">
+                                <div class="fund-nav-value">${item.nav.toFixed(4)}</div>
+                                <div class="fund-nav-change ${changeClass}">${changeSign}${item.change.toFixed(4)}</div>
+                            </div>
+                            <div class="fund-date">${item.date}</div>
+                        `;
+                        slideEl.appendChild(rowEl);
+                    }
+                });
+
+                container.appendChild(slideEl);
+
+                // Dot
+                const dot = document.createElement('span');
+                dot.className = 'dot' + (slideIndex === 0 ? ' active' : '');
+                dot.addEventListener('click', () => goToSlide(slideIndex));
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        function goToSlide(index) {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.dot');
+
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+
+            currentSlide = index;
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+
+            resetAutoSlide();
+        }
+
+        function nextSlide() {
+            goToSlide((currentSlide + 1) % totalSlides);
+        }
+
+        function resetAutoSlide() {
+            if (autoSlideTimer) clearInterval(autoSlideTimer);
+            autoSlideTimer = setInterval(nextSlide, AUTO_SLIDE_INTERVAL);
+        }
+
+        // --- Fetch NAV Data ---
+        // แก้ไขฟังก์ชันนี้เมื่อมี API endpoint
+        async function fetchNAVData() {
+            // ============================================================
+            // ตัวอย่าง: ถ้ามี API endpoint ให้ uncomment โค้ดด้านล่างแล้วแก้ URL
+            // ============================================================
+            // try {
+            //     const response = await fetch('https://your-api.bblam.co.th/api/nav/latest');
+            //     const data = await response.json();
+            //     return data; // ต้อง return ในรูปแบบเดียวกับ NAV_DATA
+            // } catch (error) {
+            //     console.error('Failed to fetch NAV data:', error);
+            //     return null;
+            // }
+
+            // ใช้ข้อมูล static ไปก่อน
+            return NAV_DATA;
+        }
+
+        // --- Scrape from bblam.co.th (alternative method) ---
+        // ใช้ได้เฉพาะเมื่อ host อยู่ใน same domain หรือมี proxy
+        // async function scrapeNAVFromBBLAM() {
+        //     try {
+        //         const response = await fetch('https://www.bblam.co.th/');
+        //         const html = await response.text();
+        //         const parser = new DOMParser();
+        //         const doc = parser.parseFromString(html, 'text/html');
+        //         const navSection = doc.querySelector('.nav-table-data.section');
+        //         // Parse table data...
+        //     } catch (error) {
+        //         console.error('Failed to scrape:', error);
+        //     }
+        // }
+
+        // --- Initialize ---
+        async function init() {
+            const data = await fetchNAVData();
+            if (!data) return;
+
+            const fundList = prepareFundList(data);
+            const slides = buildSlides(fundList);
+
+            renderSlides(slides);
+
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('navContent').style.display = 'block';
+
+            // Show refresh time
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('refreshInfo').textContent = `อัปเดตล่าสุด: ${timeStr}`;
+
+            // Start auto-slide
+            resetAutoSlide();
+
+            // Auto-refresh (เมื่อมี API)
+            // setInterval(async () => {
+            //     const newData = await fetchNAVData();
+            //     if (newData) {
+            //         const list = prepareFundList(newData);
+            //         const newSlides = buildSlides(list);
+            //         renderSlides(newSlides);
+            //         goToSlide(0);
+            //         const t = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            //         document.getElementById('refreshInfo').textContent = `อัปเดตล่าสุด: ${t}`;
+            //     }
+            // }, AUTO_REFRESH_INTERVAL);
+        }
+
+        init();
+    </script>
+</body>
+</html>
